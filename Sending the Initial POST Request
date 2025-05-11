@@ -1,0 +1,75 @@
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+public class HiringService {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    public void sendInitialRequest() {
+        String url = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook";
+        
+        // Create the request body
+        String requestBody = "{\"name\": \"John Doe\", \"regNo\": \"REG12347\", \"email\": \"john@example.com\"}";
+
+        // Set headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        // Send POST request
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        // Process response to get webhook URL and access token
+        if (response.getStatusCode() == HttpStatus.OK) {
+            String responseBody = response.getBody();
+            String webhookUrl = extractWebhookUrl(responseBody);
+            String accessToken = extractAccessToken(responseBody);
+
+            // Logic to assign the question based on regNo
+            String questionUrl = assignQuestionBasedOnRegNo("REG12347");
+            
+            // Now, send the SQL query to the test webhook
+            submitSolution(webhookUrl, accessToken, "YOUR_SQL_QUERY_HERE");
+        }
+    }
+
+    private String extractWebhookUrl(String responseBody) {
+        // Parse JSON response and extract webhook URL
+        // Use a library like Jackson or Gson for parsing
+        return "extractedWebhookUrl"; 
+    }
+
+    private String extractAccessToken(String responseBody) {
+        // Parse JSON response and extract access token
+        return "extractedAccessToken";
+    }
+
+    private String assignQuestionBasedOnRegNo(String regNo) {
+        // Assign question URL based on the last two digits of the regNo
+        return regNo.endsWith("7") ? 
+                "https://drive.google.com/file/d/1q8F8g0EpyNzd5BWk-voe5CKbsxoskJWY/view?usp=sharing" :
+                "https://drive.google.com/file/d/1PO1ZvmDqAZJv77XRYsVben11Wp2HVb/view?usp=sharing";
+    }
+
+    private void submitSolution(String webhookUrl, String accessToken, String sqlQuery) {
+        String url = "https://bfhldevapigw.healthrx.co.in/hiring/testWebhook";
+        
+        // Create request body for submitting SQL query
+        String requestBody = "{\"finalQuery\": \"" + sqlQuery + "\"}";
+
+        // Set headers with JWT token
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + accessToken);
+
+        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+        // Send POST request with solution
+        restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+    }
+}
